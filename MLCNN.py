@@ -35,7 +35,7 @@ scanf=h5py.File('data\scanbothrand.hdf','r')
 bpmf=h5py.File('data\BPMs100021dip.hdf','r')
 
 scanl=scanf['page1']['columns']
-
+#ds
 kesy=list(f.keys())
 kesy2=[i[4:] for i in kesy]
 kesy2.sort(key=int)
