@@ -1,3 +1,6 @@
+'''
+Poor attempt to put both centroid and image predictions in one script, ended up just using the plotting down at the bottom.
+'''
 import tensorflow as tf
 import h5py
 import numpy as np

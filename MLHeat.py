@@ -1,3 +1,6 @@
+'''
+OUTDATED. ML for smallest simulated heatmaps (50x50), no CNN so the output is a vector.
+'''
 import tensorflow as tf
 import h5py
 import numpy as np

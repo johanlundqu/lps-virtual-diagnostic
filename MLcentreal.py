@@ -1,3 +1,6 @@
+'''
+Predictions of centroid position on screen in real measurements. 
+'''
 import tensorflow as tf
 import h5py
 import numpy as np

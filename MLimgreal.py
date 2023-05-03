@@ -1,3 +1,6 @@
+'''
+CNN for real image predictions, sliced images.
+'''
 import tensorflow as tf
 import h5py
 import numpy as np

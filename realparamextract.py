@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jun  7 15:22:47 2022
-
-@author: johlun
+Construct ML inputs and outputs from collection run data (BC2 screen), slices and filters images.
 """
 
 import h5py
