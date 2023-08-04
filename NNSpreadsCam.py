@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import os
 from typing import List, Optional, Union, Tuple
+import wandb
+from wandb.keras import WandbMetricsLogger, WandbModelCheckpoint
 
 wd='C:\\Users\\johlun\\Documents\\Python Scripts'
 
@@ -34,6 +36,24 @@ def plot_loss(history,title):
   plt.legend()
   plt.grid(True)
 
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="NNSpreadsCam",
+    
+    # track hyperparameters and run metadata
+    config={
+        "layer1": 150,
+        "activation1": "relu",
+        "layer2": 150,
+        "activation2": "relu",
+        "optimizer": "Adam",
+        "loss": "mean_absolute_error",
+        "epoch": 750,
+        "batch_size": 256
+    }
+)
+
+config=wandb.config
 ##### DATA #####
 f=h5py.File('data/cam07k02cleanallin.hdf','r')
 fy=h5py.File('data/spreadschirpCam2.hdf','r')
@@ -44,11 +64,11 @@ kesy2.sort(key=int)
 kesy=['page'+i for i in kesy2]
 
 
-X=np.asarray([f[i]['X'] for i in kesy])
-Y=np.asarray([fy[i][:] for i in kesy])
+Xr=np.asarray([f[i]['X'] for i in kesy])
+Yr=np.asarray([fy[i][:] for i in kesy])
 
                 
-X,Xtest,Y,Ytest=train_test_split(X,Y,test_size=0.25,shuffle=True)
+X,Xtest,Y,Ytest=train_test_split(Xr,Yr,test_size=0.25,shuffle=True)
 
 f.close()
 
@@ -57,8 +77,8 @@ f.close()
 model= tf.keras.models.Sequential()
 
 def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, multiply stuff by 4
-    model.add(tf.keras.layers.Dense(100, activation='relu'))
-    model.add(tf.keras.layers.Dense(100, activation='relu'))
+    model.add(tf.keras.layers.Dense(config.layer1, activation=config.activation1))
+    model.add(tf.keras.layers.Dense(config.layer2, activation=config.activation2))
     #model.add(tf.keras.layers.Dense(200, activation='relu'))
     #model.add(tf.keras.layers.Dropout(0.5))
     model.add(tf.keras.layers.Dense(len(labels[0]), activation='relu'))
@@ -70,9 +90,9 @@ def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, 
     
     schedul= tf.keras.callbacks.LearningRateScheduler(scheduler)
     
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),loss='mean_absolute_error')
+    model.compile(optimizer=config.optimizer,loss=config.loss)
     if trainb:
-        history=model.fit(inputs,labels,batch_size=250,epochs=500, validation_split=0.05, callbacks=[mcp_save], verbose=0)
+        history=model.fit(inputs,labels,batch_size=config.batch_size,epochs=config.epoch, validation_split=0.05, callbacks=[mcp_save], verbose=0) #WandbMetricsLogger(log_freq=100),WandbModelCheckpoint("models")
         
         plot_loss(history,modelname)
     
@@ -83,8 +103,7 @@ def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, 
         model.load_weights('Nets/mdl'+modelname+'_wts_best.hdf5')
 
 buildModel(model, 'spreadcam',X, Y,True)
-
-#%%### EVAL ####
+## EVAL ####
 YpredEdge=model.predict(Xtest)
 
 
@@ -142,3 +161,5 @@ RMSB=np.sum(diffB**2)**(1/2)/len(diffB)
 RMSC=np.sum(diffC**2)**(1/2)/len(diffC)
 
 print(f'RMS slice E: {RMSX:.5f}%, RMS full E: {RMSY:.5f}%, RMS Bunch: {RMSB*1000:.5f} fs, RMS Chirp: {RMSC:.5f} /ps')
+wandb.log({"RMS slice E": RMSX, "RMS full E": RMSY,"RMS Bunch": RMSB, "RMS Chirp": RMSC})
+wandb.finish()

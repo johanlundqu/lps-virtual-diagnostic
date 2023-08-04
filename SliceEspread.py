@@ -30,7 +30,7 @@ listl=[]
 binl=[]
 maxel=[]
 order=2
-sp='Chirp'
+sp='Bunch'
 
 def spreader(sp, cam=False):
     if cam:
@@ -168,7 +168,7 @@ def plotfit(indx,cam=False):
         else:
             plt.xlabel('$\Delta$E/E [%]')
         plt.legend()
-plotfit(1,True)
+plotfit(75,True)
 #%%
 hl=[[] for i in kesy]
 call=['Slice','E','Bunch','Chirp'] #Saving done in this order
@@ -188,7 +188,7 @@ for i in range(4):
         for j in range(len(kesy)):
             hl[j].append(abs(listl[j][1]))
 '''
-hf=h5py.File('data/spreadschirpCam2.hdf','w')
+hf=h5py.File('data/spreadschirpCam2K01.hdf','w')
 hl=np.asarray(hl)
 for i in range(len(hl)):
     hf.create_dataset('page'+str(i+1),data=hl[i])

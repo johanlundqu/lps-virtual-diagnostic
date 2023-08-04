@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import os
 from typing import List, Optional, Union, Tuple
+import wandb
+from skimage.metrics import structural_similarity as ssim
 
 wd='C:\\Users\\johlun\\Documents\\Python Scripts'
 
@@ -34,6 +36,27 @@ def plot_loss(history,title):
   plt.legend()
   plt.grid(True)
 
+
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="CNNSim",
+    
+    # track hyperparameters and run metadata
+    config={
+        "layer1": 200,
+        "activation1": "relu",
+        "layer2": 200,
+        "activation2": "relu",
+        "epoch": 750,
+        'learning_rate': 1e-4
+    }
+)
+
+config=wandb.config
+
+def ssim_loss(y_true, y_pred):
+    ssiml=np.array([ssim(y_true[i], y_pred[i],win_size=9) for i in tf.range(len(y_true))]) #window?
+    return np.mean(ssiml)
 ##### DATA #####
 
 f=h5py.File('data/20kScanCSRONHMSlice.hdf','r')
@@ -81,13 +104,13 @@ for j in range(len(kesy)):
 X=np.asarray(X)
 
 Y=np.asarray([f[i]/np.amax(f[i]) for i in kesy])
-
+'''
 for k in range(len(Y)): #Set low intensity pixels to 0?
     for i in range(100):
         for j in range(100):
             if Y[k][i][j]<=0.01:
                 Y[k][i][j]=0.0
-                
+  '''              
 X,Xtest,Y,Ytest=train_test_split(X,Y,test_size=0.10,shuffle=False)
 
 f.close()
@@ -102,8 +125,8 @@ bpmf.close()
 model= tf.keras.models.Sequential()
 
 def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, multiply stuff by 4
-    model.add(tf.keras.layers.Dense(200, activation='relu'))
-    model.add(tf.keras.layers.Dense(200, activation='relu'))
+    model.add(tf.keras.layers.Dense(config.layer1, activation=config.activation1))
+    model.add(tf.keras.layers.Dense(config.layer2, activation=config.activation2))
     #model.add(tf.keras.layers.Dropout(0.5))
     model.add(tf.keras.layers.Dense(10000, activation='relu'))
     model.add(tf.keras.layers.Reshape((10,10,100)))
@@ -120,9 +143,9 @@ def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, 
     
     schedul= tf.keras.callbacks.LearningRateScheduler(scheduler)
     
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),loss='mean_absolute_error')
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=config.learning_rate),loss='mean_absolute_error')
     if trainb:
-        history=model.fit(inputs,labels,batch_size=250,epochs=900, validation_split=0.01, callbacks=[mcp_save], verbose=10)
+        history=model.fit(inputs,labels,batch_size=250,epochs=config.epoch, validation_split=0.01, callbacks=[mcp_save], verbose=10)
         
         plot_loss(history,modelname)
     
@@ -206,7 +229,11 @@ meantrue=[i-np.mean(i) for i in Ytest2]
 Rl=[1-sum(diff2[i]**2)/sum(meantrue[i]**2) for i in range(len(diff2))]
 print(f'SLAC Score [R²]: {np.mean(Rl):.3f}')
 
+print(f'Mean SSIM: {ssim_loss(Ytest,Ypred):.3f}')
+
 #rfile=h5py.File('Data/cleansave2206NoSet','r')
 
 #rX=np.array([rfile[i]['X'][:] for i in kesy[:len(rfile.keys())]])
 #rY=[rfile[i]['Y'][:] for i in kesy[:len(rfile.keys())]]
+wandb.log({"R2": np.mean(Rl), 'SSIM': ssim_loss(Ytest,Ypred)})
+wandb.finish()

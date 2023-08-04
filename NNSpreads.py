@@ -106,7 +106,7 @@ def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, 
     
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),loss='mean_absolute_error')
     if trainb:
-        history=model.fit(inputs,labels,batch_size=250,epochs=100, validation_split=0.01, callbacks=[mcp_save], verbose=0)
+        history=model.fit(inputs,labels,batch_size=250,epochs=100, validation_split=0.01, callbacks=[mcp_save], verbose=1)
         
         plot_loss(history,modelname)
     
@@ -116,7 +116,7 @@ def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, 
 
         model.load_weights('Nets/mdl'+modelname+'_wts.hdf5')
 
-buildModel(model, 'spread',X, Y,False)
+buildModel(model, 'spread',X, Y,True)
 
 #%%### EVAL ####
 YpredEdge=model.predict(Xtest)

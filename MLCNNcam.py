@@ -39,10 +39,25 @@ kesy2.sort(key=int)
 kesy=['page'+i for i in kesy2]
 
 
-X=np.asarray([f[i]['X'] for i in kesy])
+X=[f[i]['X'][:] for i in kesy]
 
-Y=np.asarray([f[i]['Y'] for i in kesy])
+Y=[f[i]['Y'][:] for i in kesy]
+f.close()
 
+f=h5py.File('data/cam07k01cleanallin2.hdf','r')
+
+kesy=list(f.keys())
+kesy2=[i[4:] for i in kesy]
+kesy2.sort(key=int)
+kesy=['page'+i for i in kesy2]
+
+
+X+=[f[i]['X'][:] for i in kesy]
+
+Y+=[f[i]['Y'][:] for i in kesy]
+
+X=np.asarray(X)
+Y=np.asarray(Y)
                 
 X,Xtest,Y,Ytest=train_test_split(X,Y,test_size=0.05,shuffle=True)
 
@@ -86,7 +101,7 @@ def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, 
 
         model.load_weights('Nets/mdl'+modelname+'_wts_bestallin.hdf5')
 
-buildModel(model, 'CNNcam07',X, Y,False)
+buildModel(model, 'CNNcam07BothK0102',X, Y,True)
 
 #%%### EVAL ####
 
