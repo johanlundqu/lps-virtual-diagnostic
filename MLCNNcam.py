@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import os
 from typing import List, Optional, Union, Tuple
+from skimage.metrics import structural_similarity as ssim
 
 wd='C:\\Users\\johlun\\Documents\\Python Scripts'
 
@@ -28,10 +29,12 @@ def plot_loss(history,title):
   plt.title(title)
   plt.legend()
   plt.grid(True)
-
+def ssim_loss(y_true, y_pred):
+    ssiml=np.array([ssim(y_true[i], y_pred[i],win_size=9) for i in tf.range(len(y_true))]) #window?
+    return np.mean(ssiml)
 ##### DATA #####
 
-f=h5py.File('data/randfilltimeclean.hdf','r')
+f=h5py.File('data/cam07k02cleanallin.hdf','r')
 
 kesy=list(f.keys())
 kesy2=[i[4:] for i in kesy]
@@ -44,23 +47,23 @@ X=[f[i]['X'][:] for i in kesy]
 Y=[f[i]['Y'][:] for i in kesy]
 f.close()
 
-# f=h5py.File('data/cam07k01cleanallin2.hdf','r')
+f=h5py.File('data/cam07k01cleanallin2.hdf','r')
 
-# kesy=list(f.keys())
-# kesy2=[i[4:] for i in kesy]
-# kesy2.sort(key=int)
-# kesy=['page'+i for i in kesy2]
+kesy=list(f.keys())
+kesy2=[i[4:] for i in kesy]
+kesy2.sort(key=int)
+kesy=['page'+i for i in kesy2]
 
 
-# X+=[f[i]['X'][:] for i in kesy]
+X+=[f[i]['X'][:] for i in kesy]
 
-# Y+=[f[i]['Y'][:] for i in kesy]
+Y+=[f[i]['Y'][:] for i in kesy]
 
 X=np.asarray(X)
 Y=np.asarray(Y)
                 
 X,Xtest,Y,Ytest=train_test_split(X,Y,test_size=0.05,shuffle=True)
-
+im_shape=Y[0].shape
 f.close()
 
 #%%### MODEL ####
@@ -71,15 +74,15 @@ def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, 
     model.add(tf.keras.layers.Dense(200))#, activation='relu'))
     model.add(tf.keras.layers.Dense(200))#, activation='relu'))
     #model.add(tf.keras.layers.Dropout(0.5))
-    model.add(tf.keras.layers.Dense(100000))#, activation='relu'))
-    model.add(tf.keras.layers.Reshape((10,10,1000)))
-    model.add(tf.keras.layers.Conv2D(1000, (3,3), padding='same',activation='relu'))#,activation='relu'))
-    model.add(tf.keras.layers.Reshape((25,25,160)))
-    model.add(tf.keras.layers.Conv2D(160, (4,4), padding='same',activation='relu'))#,activation='relu'))
-    model.add(tf.keras.layers.Reshape((100,100,10)))
-    model.add(tf.keras.layers.Conv2D(10, (5,5), padding='same',activation='relu'))#,activation='relu'))
-    model.add(tf.keras.layers.Reshape((200,500,1)))
-    model.add(tf.keras.layers.Conv2D(1, (10,10), padding='same',activation='relu'))#,activation='relu'))
+    model.add(tf.keras.layers.Dense(np.prod(im_shape)))#, activation='relu'))
+    # model.add(tf.keras.layers.Reshape((int(im_shape[0]/100),int(im_shape[1]/100),10000)))
+    # model.add(tf.keras.layers.Conv2D(10000, (3,3), padding='same',activation='relu'))#,activation='relu'))
+    model.add(tf.keras.layers.Reshape((int(im_shape[0]/10),int(im_shape[1]/10),100)))
+    model.add(tf.keras.layers.Conv2D(100, (4,4), padding='same',activation='relu'))#,activation='relu'))
+    model.add(tf.keras.layers.Reshape((im_shape[0],im_shape[1],1)))
+    model.add(tf.keras.layers.Conv2D(1, (5,5), padding='same',activation='relu'))#,activation='relu'))
+    # model.add(tf.keras.layers.Reshape(im_shape))
+    # model.add(tf.keras.layers.Conv2D(1, (10,10), padding='same',activation='relu'))#,activation='relu'))
 
 
     mcp_save = tf.keras.callbacks.ModelCheckpoint('Nets/mdl'+modelname+'_wts.hdf5', 
@@ -101,7 +104,7 @@ def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, 
 
         model.load_weights('Nets/mdl'+modelname+'_wts_bestallin.hdf5')
 
-buildModel(model, 'CNNcamFilltime',X, Y,True)
+buildModel(model, 'CNNcamPhase',X, Y,True)
 
 #%%### EVAL ####
 
@@ -166,7 +169,7 @@ def plotim(i,fft=False,save=''):
             plt.savefig('Figs/'+str(save),dpi=200,bbox_inches='tight')
         
 #for i in range(len(Ytest)): #Real im span in mm = 3.125 mm, in Delta E % = 0.6085222555260256 %, x span = 1.25 mm = 0.7621951219512195 ps
-plotim(3)
+plotim(0)
 
 Ytest2=[np.matrix.flatten(i) for i in Ytest]
 Ypred2=[np.matrix.flatten(i) for i in Ypred]
@@ -179,6 +182,8 @@ print(f'Normalized RMS: {np.mean(rmsl):.3f}')
 meantrue=[i-np.mean(i) for i in Ytest2]
 Rl=[1-sum(diff2[i]**2)/sum(meantrue[i]**2) for i in range(len(diff2))]
 print(f'SLAC Score [R²]: {np.mean(Rl):.3f}')
+
+print(f'Mean SSIM: {ssim_loss(Ytest,Ypred):.3f}')
 
 #rfile=h5py.File('Data/cleansave2206NoSet','r')
 
