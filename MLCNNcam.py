@@ -31,7 +31,7 @@ def plot_loss(history,title):
 
 ##### DATA #####
 
-f=h5py.File('data/cam07k02cleanallin.hdf','r')
+f=h5py.File('data/randfilltimeclean.hdf','r')
 
 kesy=list(f.keys())
 kesy2=[i[4:] for i in kesy]
@@ -44,17 +44,17 @@ X=[f[i]['X'][:] for i in kesy]
 Y=[f[i]['Y'][:] for i in kesy]
 f.close()
 
-f=h5py.File('data/cam07k01cleanallin2.hdf','r')
+# f=h5py.File('data/cam07k01cleanallin2.hdf','r')
 
-kesy=list(f.keys())
-kesy2=[i[4:] for i in kesy]
-kesy2.sort(key=int)
-kesy=['page'+i for i in kesy2]
+# kesy=list(f.keys())
+# kesy2=[i[4:] for i in kesy]
+# kesy2.sort(key=int)
+# kesy=['page'+i for i in kesy2]
 
 
-X+=[f[i]['X'][:] for i in kesy]
+# X+=[f[i]['X'][:] for i in kesy]
 
-Y+=[f[i]['Y'][:] for i in kesy]
+# Y+=[f[i]['Y'][:] for i in kesy]
 
 X=np.asarray(X)
 Y=np.asarray(Y)
@@ -101,7 +101,7 @@ def buildModel(model,modelname,inputs,labels,trainb=True): #For 200x200 images, 
 
         model.load_weights('Nets/mdl'+modelname+'_wts_bestallin.hdf5')
 
-buildModel(model, 'CNNcam07BothK0102',X, Y,True)
+buildModel(model, 'CNNcamFilltime',X, Y,True)
 
 #%%### EVAL ####
 
